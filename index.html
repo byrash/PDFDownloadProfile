@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download PDFs</title>
+    <style>
+        #results {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <button id="downloadSingle">Download Single 10 MB PDF</button>
+    <button id="downloadParallel">Download Ten 1 MB PDFs in Parallel</button>
+
+    <div id="results">
+        <h3>Download Results:</h3>
+        <p id="singleFileResult"></p>
+        <p id="parallelFilesResult"></p>
+    </div>
+
+    <script>
+        async function downloadFile(url, filename) {
+            const startTime = performance.now();
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const endTime = performance.now();
+            const timeTaken = endTime - startTime;
+
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            console.log(`${filename} downloaded in ${timeTaken.toFixed(2)} ms`);
+            return timeTaken;
+        }
+
+        async function downloadFilesInParallel(url, count) {
+            const promises = Array.from({length: count}, (_, index) => downloadFile(url, `file${index + 1}.pdf`));
+            const times = await Promise.all(promises);
+            const totalTime = times.reduce((acc, time) => acc + time, 0);
+            document.getElementById('parallelFilesResult').innerText = `Total time for parallel downloads: ${totalTime.toFixed(2)} ms`;
+            console.log(`Total time for parallel downloads: ${totalTime.toFixed(2)} ms`);
+        }
+
+        async function downloadSingleFile(url, filename) {
+            const timeTaken = await downloadFile(url, filename);
+            document.getElementById('singleFileResult').innerText = `Total time for single file download: ${timeTaken.toFixed(2)} ms`;
+            console.log(`Total time for single file download: ${timeTaken.toFixed(2)} ms`);
+        }
+
+        // URLs for the PDF files
+        const singleFileUrl = 'http://localhost:3000/pdfs/10mb.pdf';
+        const oneMbFileUrl = 'http://localhost:3000/pdfs/1mb.pdf';
+
+        document.getElementById('downloadSingle').addEventListener('click', () => {
+            downloadSingleFile(singleFileUrl, 'file10mb.pdf');
+        });
+
+        document.getElementById('downloadParallel').addEventListener('click', () => {
+            downloadFilesInParallel(oneMbFileUrl, 10);
+        });
+    </script>
+</body>
+
+</html>
